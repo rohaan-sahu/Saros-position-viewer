@@ -1,8 +1,25 @@
-# Workshop Template Repository
+# Saros-Position-Viewer
 
-This is a workshop template repository for building interactive applications.
+This is built using the workshop template repository availavle at [Intro to DLMM SDK](https://saros-playground.vercel.app/workshops)
+
+## Workshop Details
+
+For more information about this workshop, including detailed instructions, examples, and resources, please visit:
+
+[Saros DLMM SDK](https://github.com/saros-xyz/dlmm-saros-sdk)
+
+[Youtube link](https://www.youtube.com/watch?v=4gkEHqVbw4w)
+
+[Template link](https://saros-playground.vercel.app/workshops)
+
 
 ## Getting Started
+
+### RPC URL
+The RPC URL I have used is from Helius, from the free-tiee, with Rate-limits.
+To use teh same you may create an account on Helius and get the API key and then create an environment variable
+- Create '.env' file in root, add variable 'NEXT_PUBLIC_RPC_URL'
+- To it add "https://mainnet.helius-rpc.com/?{Your Helius API KEY}"
 
 ### Prerequisites
 
@@ -26,11 +43,6 @@ To start the development server:
 
 The application will be available at `http://localhost:3000`
 
-## Workshop Details
-
-For more information about this workshop, including detailed instructions, examples, and resources, please visit:
-
-**https://saros-playground.vercel.app/workshops**
 
 ## Project Structure
 
