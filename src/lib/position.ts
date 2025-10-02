@@ -6,13 +6,13 @@ import dotenv from 'dotenv';
 import path from "path";
 import { calculateTokenAmount } from "./utils";
 import { tokenName } from "./token";
-dotenv
+
+// Payer wallet
+const PAYER = 'add_your_mainet_payer_wallet_here';
 
 // 🎯 WORKSHOP POOL - USDC/USDT
+// Add your pools here
 const POOL_ADDRESS = "9P3N4QxjMumpTNNdvaNNskXu2t7VHMMXtePQB72kkSAk";
-
-// 🎯 WORKSHOP POOL - FARTCOIN/USDC
-const POOL_ADDRESS_2 = "8f5df1A2pahY3qgrXTSx9jtYnE2idavDv9BK94smB528";
 
 // Shared DLMM service instance
 const dlmmService = new LiquidityBookServices({
@@ -65,7 +65,7 @@ export const fetchPositionInfo = async (poolAddress: string) => {
 
     //const payer = new PublicKey(process.env.SAROS_POSITION_WALLET || poolAddress);
     
-    const payer = new PublicKey('4VGLP8wqFEHEoh8vjgYCMsUbZ6LtuYrxcJv226qCWNuT');
+    const payer = new PublicKey(PAYER);
     await delay(400);
 
     // Token Mints
