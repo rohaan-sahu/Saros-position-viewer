@@ -3,13 +3,10 @@ import { LiquidityBookServices, MODE } from "@saros-finance/dlmm-sdk";
 import { BinLiquidityData,CompositPosition,BinResult } from "./types";
 import {PublicKey} from '@solana/web3.js'
 import dotenv from 'dotenv';
+import path from "path";
 import { calculateTokenAmount } from "./utils";
 import { tokenName } from "./token";
-
-dotenv.config({path: '../../.env'});
-
-// USDC Mint
-const ADDRESS_TO_QUERY = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; 
+dotenv
 
 // 🎯 WORKSHOP POOL - USDC/USDT
 const POOL_ADDRESS = "9P3N4QxjMumpTNNdvaNNskXu2t7VHMMXtePQB72kkSAk";
@@ -30,14 +27,18 @@ const dlmmService = new LiquidityBookServices({
 const compositePosition:CompositPosition = {};
 
 // helper function - merges bins from different positions
-export const addBinsToCompositePosition = (bin:BinResult) => {
+export const addBinsToCompositePosition = (bin:BinResult,pos:string) => {
+
   const key = String(bin.binId);
   if (!compositePosition[key]) {
     // First occurrence, initialize
     compositePosition[key] = {
       binId: bin.binId,
+      positionAddress: pos,
+      isPosition: true,
       reserveX: Number(bin.reserveX),
-      reserveY: Number(bin.reserveY)
+      reserveY: Number(bin.reserveY),
+
     };
   } else {
     // Already exists, sum the values
@@ -49,7 +50,7 @@ export const addBinsToCompositePosition = (bin:BinResult) => {
 };
 
 // helper functions we will define
-export const fetchPoolInfo = async (poolAddress: string) => {
+export const fetchPositionInfo = async (poolAddress: string) => {
   try {
     console.log("fetching pool info", poolAddress);
     const poolPubKey = new PublicKey(poolAddress);
@@ -62,6 +63,8 @@ export const fetchPoolInfo = async (poolAddress: string) => {
     // delay
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+    //const payer = new PublicKey(process.env.SAROS_POSITION_WALLET || poolAddress);
+    
     const payer = new PublicKey('4VGLP8wqFEHEoh8vjgYCMsUbZ6LtuYrxcJv226qCWNuT');
     await delay(400);
 
@@ -95,20 +98,26 @@ export const fetchPoolInfo = async (poolAddress: string) => {
 
     // funnction to get bin reserve detail for each position
     const results = await Promise.allSettled(
-      positionAddresses.map(pos =>{
-        delay(400);
-        return dlmmService.getBinsReserveInformation({
+      positionAddresses.map(async (pos) =>{
+        await delay(400);
+        let posBins = await dlmmService.getBinsReserveInformation({
           position: new PublicKey(pos),
           pair: poolPubKey,
           payer: payer
-        })}
+        });
+        
+        // Adding the position address to the response of getBinsReserveInfo
+        return {pos,posBins}
+      }
       )
-    )
+    );
+
 
     results.forEach((result, idx) => {
       if (result.status === 'fulfilled') {
         //addBinsToCompositePosition(result);
-        result.value.forEach((bin) => addBinsToCompositePosition(bin));
+        const {pos,posBins} = result.value;
+        posBins.forEach((bin) => addBinsToCompositePosition(bin,pos));
         
         //console.log(`Position ${positionAddresses[idx]} reserves:`, result.value);
       } else {
@@ -126,6 +135,13 @@ export const fetchPoolInfo = async (poolAddress: string) => {
     const binStep = pairAccount.binStep;
     const activeBinArrayIndex = Math.floor(activeBin/256);
 
+    // All bins - DLMM
+    const arrayInfo = await dlmmService.getBinArrayInfo({
+      binArrayIndex: activeBinArrayIndex,
+      pair: poolPubKey,
+      payer: payer
+    })
+
     console.log('pool info sent');
     return {
       metadata,
@@ -134,7 +150,8 @@ export const fetchPoolInfo = async (poolAddress: string) => {
       currentMarketPrice,
       activeBin,
       binStep,
-      compositePosition
+      compositePosition,
+      ...arrayInfo
     }
 
   } catch (error) {
@@ -144,7 +161,76 @@ export const fetchPoolInfo = async (poolAddress: string) => {
   
 };
 
-export const getBinLiquidity = async (): Promise<BinLiquidityData[]> => {
+export const getPositionBinLiquidity = async (poolAddress:PublicKey): Promise<BinLiquidityData[]> => {
+  try {
+    console.log("TODO: getPositionLiquidity");
+
+    const {
+      metadata,
+      tokenX,
+      tokenY,
+      currentMarketPrice,
+      activeBin,
+      binStep,
+      compositePosition
+    } = await fetchPositionInfo(poolAddress.toString());
+
+    const positionLiquidityData: BinLiquidityData[] = [];
+
+    // Extracting key value pairs from the composite position object
+    const positionBins =  Object.entries(compositePosition);
+
+    positionBins.forEach(([binId,bin]) => {
+
+      if (bin.reserveX > 0 || bin.reserveY > 0 ) {
+        const isActive = binId === activeBin;
+
+        const reserveXAmount = calculateTokenAmount(
+          bin.reserveX,
+          metadata.extra.tokenBaseDecimal
+        );
+
+        const reserveYAmount = calculateTokenAmount(
+          bin.reserveY,
+          metadata.extra.tokenQuoteDecimal
+        );
+
+        const priceDelta = Math.pow(1 + binStep/10000 , Number(binId) - Number(activeBin));
+        const binPrice = currentMarketPrice * priceDelta;
+
+        const totalLiquidity = (reserveXAmount * binPrice) + (reserveYAmount / binPrice);
+
+        console.log('bin liquidity sent');
+        let binInfo = {
+          binId: Number(binId),
+          price: binPrice,
+          symbolX : tokenX?.symbol || 'tokens',
+          symbolY : tokenY?.symbol || 'tokens',
+          imageX : tokenX?.image || null,
+          imageY : tokenY?.image || null,
+          reserveXAmount,
+          reserveYAmount,
+          totalLiquidity,
+          isActive,
+          isPosition : bin.isPosition,
+          positionAddress: bin.positionAddress
+        };
+
+        positionLiquidityData.push(binInfo);
+      };
+      
+    });
+    
+    return positionLiquidityData;
+
+  } catch (error) {
+    console.error("❌ Workshop error:", error);
+    return [];
+  }
+};
+
+
+export const getPoolBinLiquidity = async (poolAddress:PublicKey): Promise<BinLiquidityData[]> => {
   try {
     console.log("TODO: getPoolLiquidity");
 
@@ -155,13 +241,10 @@ export const getBinLiquidity = async (): Promise<BinLiquidityData[]> => {
       currentMarketPrice,
       activeBin,
       binStep,
-      compositePosition
-    } = await fetchPoolInfo(POOL_ADDRESS);
+      bins
+    } = await fetchPositionInfo(poolAddress.toString());
 
     const binLiquidityData: BinLiquidityData[] = [];
-
-    // Extracting key value pairs from the composite position object
-    const bins =  Object.entries(compositePosition);
 
     bins.forEach(([binId,bin]) => {
       if (bin.reserveX > 0 || bin.reserveY > 0 ) {
@@ -188,6 +271,8 @@ export const getBinLiquidity = async (): Promise<BinLiquidityData[]> => {
           price: binPrice,
           symbolX : tokenX?.symbol || 'tokens',
           symbolY : tokenY?.symbol || 'tokens',
+          imageX : tokenX?.image || null,
+          imageY : tokenY?.image || null,
           reserveXAmount,
           reserveYAmount,
           totalLiquidity,
@@ -199,7 +284,6 @@ export const getBinLiquidity = async (): Promise<BinLiquidityData[]> => {
       
     });
      
-
     return binLiquidityData;
 
   } catch (error) {

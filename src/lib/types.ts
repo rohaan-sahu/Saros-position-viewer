@@ -2,12 +2,19 @@
 export interface BinLiquidityData {
   binId: number;
   price: number;
+  symbolX: string;
+  symbolY: string;
+  imageX?: string | null;
+  imageY?: string | null;
   reserveXAmount: number;
   reserveYAmount: number;
   totalLiquidity: number;
   totalSupply?: string;
   isActive: boolean;
+  isPosition?: boolean;
+  positionAddress?: string | null;
 }
+
 
 /*
 pair,positionMint,LiquidityShares,lowerBinId,upperBinId,position,space
@@ -19,6 +26,8 @@ export interface BinReserveInfo  {
   reserveY: number ;   // Amount of token Y reserved in this bin
   liquidityShare?: number | string | BigInt;  // Liquidity amount in this bin (could be shares or raw units)
   binPosition?: number;
+  isPosition?: boolean;
+  positionAddress?: string | null;
 
   // Optionally, more fields:
   // feeEarnedX?: number | string;

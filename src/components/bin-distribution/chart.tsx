@@ -8,6 +8,7 @@ import { BinLiquidityData } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
 import { BarChart3 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import Image from "next/image";
 
 const chartConfig = {
   totalLiquidity: {
@@ -15,6 +16,8 @@ const chartConfig = {
     color: "hsl(var(--chart-1))",
   },
 } satisfies ChartConfig;
+
+
 
 export function BinDistributionChart({
   binData,
@@ -40,6 +43,14 @@ export function BinDistributionChart({
     );
   }
 
+//
+const handleZoomIn = () => {
+  
+};
+const handleZoomOut = () => {
+  
+};
+
   // Simple sort by binId - no complex processing needed
   const sortedBinData = [...binData].sort((a, b) => a.binId - b.binId);
 
@@ -49,7 +60,8 @@ export function BinDistributionChart({
         <div className="space-y-1">
           <h4 className="font-semibold text-base sm:text-lg flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-purple-600" />
-            Bin Distribution Chart
+            {binData[0]?.symbolX}{" - "}{binData[0]?.symbolY}{" "}
+            Position Distribution Chart
           </h4>
         </div>
         <div className="text-xs italic">
@@ -57,7 +69,28 @@ export function BinDistributionChart({
         </div>
       </div>
 
-      <ChartContainer config={chartConfig} className="min-h-[300px]">
+      <div className="grid grid-cols-6 lg:grid-cols-9 grid-rows-16 gap-4">
+      <div className="col-span-1 lg:col-span-5 row-span-10 border border-gray-300 rounded-lg min-w-[400px] h-[240px] p-4">
+        {(binData[0].imageX && binData[0].imageY) && 
+          <div className="flex items-center justify-start gap-2">
+            <Image 
+              src= {binData[0].imageX}
+              alt={binData[0].symbolX}
+              width={30}
+              height={30}
+              className="text-blue-500 border-2 border-white/30 rounded-lg"
+            />
+
+            <Image 
+              src= {binData[0].imageY} 
+              alt={binData[0].symbolY}
+              width={30}
+              height={30}
+              className="text-blue-500 border-2 border-white/30 rounded-lg"
+            />
+          </div>
+        }
+      <ChartContainer config={chartConfig} className="col-span-1 lg:col-span-2 row-span-4 h-[200px] w-[385px] lg:w-[874px]">
         <BarChart
           accessibilityLayer
           data={sortedBinData}
@@ -92,11 +125,8 @@ export function BinDistributionChart({
                   const payload = props.payload;
                   const isActive = payload?.isActive;
 
-                  const yEntry = payload.find((p:any) => p.dataKey === 'price');
-
                   return [
                     <div key="content" className="space-y-1">
-                      { yEntry && (<>
                         <div
                           className={`font-semibold ${isActive ? "text-green-600" : ""}`}
                         >
@@ -126,8 +156,6 @@ export function BinDistributionChart({
                             Quote Value: ${formatNumber(payload?.reserveYAmount)}
                           </div>
                         </div>
-                        </>
-                        )}
                     </div>,
                   ];
                 }}
@@ -139,6 +167,29 @@ export function BinDistributionChart({
           {/*<ReferenceLine y={0} stroke="#fff" />*/}
         </BarChart>
       </ChartContainer>
+       {
+          <div className="flex items-center gap-2">
+            {/* Zoom Out Button */}
+            <button
+              onClick={handleZoomOut}
+              className="w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-xl flex items-center justify-center shadow-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              aria-label="Zoom out"
+            >
+              -
+            </button>
+            
+            {/* Zoom In Button */}
+            <button
+              onClick={handleZoomIn}
+              className="w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 text-white font-bold text-xl flex items-center justify-center shadow-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+          </div>
+      }
+      </div>
+      </div>
     </div>
   );
 }
