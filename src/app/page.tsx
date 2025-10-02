@@ -2,7 +2,7 @@
 
 import { BinDistributionChart } from "@/components/bin-distribution/chart";
 import { getPositionBinLiquidity } from "@/lib/position";
-import { BinLiquidityData, PositionLiquidityData } from "@/lib/types";
+import { BinLiquidityData } from "@/lib/types";
 import { useEffect, useState } from "react";
 import {PublicKey} from '@solana/web3.js'
 

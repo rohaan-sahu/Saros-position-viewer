@@ -144,6 +144,7 @@ export const fetchPositionInfo = async (poolAddress: string) => {
 
     console.log('pool info sent');
     return {
+      positions,
       metadata,
       tokenX,
       tokenY,
@@ -166,6 +167,7 @@ export const getPositionBinLiquidity = async (poolAddress:PublicKey): Promise<Bi
     console.log("TODO: getPositionLiquidity");
 
     const {
+      positions,
       metadata,
       tokenX,
       tokenY,

@@ -7,8 +7,9 @@ import {
 import { BinLiquidityData } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
 import { BarChart3 } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from "recharts";
 import Image from "next/image";
+import { useState } from "react";
 
 const chartConfig = {
   totalLiquidity: {
@@ -43,16 +44,26 @@ export function BinDistributionChart({
     );
   }
 
+  const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
+
+
 //
 const handleZoomIn = () => {
-  
+  alert("Currently not functional");
 };
 const handleZoomOut = () => {
-  
+  alert("Currently not functional");
 };
 
   // Simple sort by binId - no complex processing needed
   const sortedBinData = [...binData].sort((a, b) => a.binId - b.binId);
+
+  const uniquePositionAddresses = [...new Set(
+  sortedBinData
+    .map(bin => bin.positionAddress)
+    .filter(address => address != null)
+)];
+  console.log(sortedBinData)
 
   return (
     <div className="space-y-4">
@@ -155,6 +166,13 @@ const handleZoomOut = () => {
                           <div>
                             Quote Value: ${formatNumber(payload?.reserveYAmount)}
                           </div>
+                          {
+                            uniquePositionAddresses.includes(payload?.positionAddress) && (
+                              <div>
+                                Position: {uniquePositionAddresses.indexOf(payload?.positionAddress) + 1}
+                              </div>
+                            )
+                          }
                         </div>
                     </div>,
                   ];
@@ -162,11 +180,65 @@ const handleZoomOut = () => {
               />
             }
           />
-          <Bar dataKey="reserveYAmount" minPointSize={0.5} stackId="binId" radius={2} fill = "#3b82f6"/>
-          <Bar dataKey="reserveXAmount" minPointSize={0.5} stackId="binId" radius={2} fill = "#22c55e"/>
+          <Bar 
+            dataKey="reserveYAmount" 
+            minPointSize={0.5} 
+            stackId="binId" 
+            radius={2}
+          >
+            {binData.map((entry, index) => (
+              <Cell 
+                key={`cell-y-${index}`}
+                fill={selectedPosition === entry.positionAddress ? "#c58722ff" : "#22c55e"}
+              />
+            ))}
+          </Bar>
+
+          <Bar 
+            dataKey="reserveXAmount" 
+            minPointSize={0.5} 
+            stackId="binId" 
+            radius={2}
+          >
+            {binData.map((entry, index) => (
+              <Cell 
+                key={`cell-x-${index}`}
+                fill={selectedPosition === entry.positionAddress ? "#dde750ff" : "#3b82f6" }
+              />
+            ))}
+          </Bar>
           {/*<ReferenceLine y={0} stroke="#fff" />*/}
         </BarChart>
       </ChartContainer>
+
+        {
+          uniquePositionAddresses.map((positionAddress, index) => (
+            <button 
+              key={positionAddress}
+              onClick={() => setSelectedPosition(positionAddress)}
+              className={`px-4 py-2 rounded ${
+                selectedPosition === positionAddress 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-black'
+              }`}
+            >
+              Position {index + 1}
+            </button>
+          ))
+        }
+        {
+         <button 
+              key='compositPosition'
+              onClick={() => setSelectedPosition(null)}
+              className={`px-4 py-2 rounded ${
+                selectedPosition === null 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-black'
+              }`}
+            >
+              Cumulative position
+            </button> 
+        }
        {
           <div className="flex items-center gap-2">
             {/* Zoom Out Button */}
