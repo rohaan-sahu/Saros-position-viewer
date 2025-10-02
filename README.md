@@ -33,6 +33,15 @@ Make sure you have Node.js installed on your system.
    npm install
    ```
 
+### How to get results
+At ".|src\lib\position.ts"
+- Add your wallet address at 'PAYER'
+- Add the pool you have a position in at 'POOL_ADDRESS'
+
+At "./" , create a '.env' file
+- Add Helius mainnet RPC URL at 'NEXT_PUBLIC_RPC_URL'
+
+
 ### Running the Development Server
 
 To start the development server:
